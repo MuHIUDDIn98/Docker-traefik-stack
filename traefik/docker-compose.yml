@@ -61,7 +61,7 @@ services:
       # --- Secure the Dashboard ---
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-public"
-      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${MY_DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefikdb.${MY_DOMAIN}`)"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.middlewares=authelia-auth@file,sec-headers@file"
