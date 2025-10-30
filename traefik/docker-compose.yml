@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   traefik:
     image: "traefik:v3.5"
@@ -35,42 +37,39 @@ services:
       - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=cloudflare" # Use Cloudflare
 
       # --- Wildcard Certificate Request ---
-      # This is the KEY to our whole setup. It asks for ONE cert
-      # that covers your main domain and ALL subdomains.
       - "--certificatesresolvers.myresolver.acme.domains[0].main=${MY_DOMAIN}"
       - "--certificatesresolvers.myresolver.acme.domains[0].sans=*.${MY_DOMAIN}"
 
       # --- Attach the resolver to our HTTPS entrypoint ---
-      # This tells all traffic on port 443 to use our new wildcard cert
       - "--entrypoints.websecure.http.tls.certresolver=myresolver"
 
     ports:
-      # Maps your server's public ports to the container's entrypoints
-      - "80:80"   # (web)
-      - "443:443" # (websecure)
-      # We DO NOT map 8082, keeping our metrics private.
+      - "80:80"
+      - "443:443"
 
     volumes:
-      # Gives Traefik permission to listen to Docker events
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      # A persistent volume to save our SSL certificates
       - "traefik-certs:/letsencrypt"
-      # Mounts our middleware file so Traefik can read it
       - "./dynamic_conf:/dynamic_conf:ro"
 
     networks:
-      # Connects Traefik to the main public network
+      # This block just lists the networks to JOIN
       - traefik-public
 
     labels:
       # --- Secure the Dashboard ---
-      # Yes, we use labels to tell Traefik how to configure *itself*
-      - "traefik.enable=true" # Tell Traefik to expose this container
+      - "traefik.enable=true"
       - "traefik.docker.network=traefik-public"
-      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${MY_DOMAIN}`)" # URL for the dashboard
-      - "traefik.http.routers.traefik-dashboard.service=api@internal" # Special service for the dashboard
-      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure" # HTTPS only
-      - "traefik.http.routers.traefik-dashboard.middlewares=authelia-auth@file,sec-headers@file" # Secure it!
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${MY_DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.middlewares=authelia-auth@file,sec-headers@file"
 
 volumes:
   traefik-certs: # Defines the persistent volume for certs
+
+# --- THIS IS THE CORRECT, TOP-LEVEL BLOCK ---
+# This block DEFINES the networks used in this file
+networks:
+  traefik-public:
+    external: true # Tells Docker Compose to use the network you already created
