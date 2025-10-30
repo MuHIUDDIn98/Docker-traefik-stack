@@ -4,41 +4,39 @@ services:
   traefik:
     image: "traefik:v3.5"
     container_name: "traefik-proxy"
-    env_file: .env # <-- Loads the variables from traefik/.env
+    env_file: .env
     environment:
-      # This securely passes the token from the .env file
-      # into the container's environment
       - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
     command:
       # --- API, Providers, & Dynamic Config ---
-      - "--api.dashboard=true" # Enables the web dashboard
-      - "--providers.docker=true" # Tells Traefik to watch Docker
-      - "--providers.docker.exposedbydefault=false" # CRITICAL: Don't expose any container unless it has a label
-      - "--providers.docker.network=traefik-public" # CRITICAL: Only watch containers on this network
-      - "--providers.file.directory=/dynamic_conf" # Load middlewares.yml
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=traefik-public"
+      - "--providers.file.directory=/dynamic_conf"
 
       # --- Enable Prometheus Metrics ---
-      - "--metrics.prometheus=true" # Creates a /metrics endpoint
-      - "--metrics.prometheus.entrypoint=metrics" # Makes it available on the 'metrics' entrypoint
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.entrypoint=metrics"
 
       # --- Entrypoints (Ports) ---
-      - "--entrypoints.web.address=:80" # For HTTP traffic
-      - "--entrypoints.websecure.address=:443" # For HTTPS traffic
-      - "--entrypoints.metrics.address=:8082" # For Prometheus (internal only)
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.metrics.address=:8082"
 
       # --- Global HTTP to HTTPS Redirect ---
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
 
       # --- Let's Encrypt (ACME) with DNS-01 Challenge ---
-      - "--certificatesresolvers.myresolver.acme.email=${MY_EMAIL}" # Uses your email
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json" # Where to save certs
-      - "--certificatesresolvers.myresolver.acme.dnschallenge=true" # Use DNS-01
-      - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=cloudflare" # Use Cloudflare
+      - "--certificatesresolvers.myresolver.acme.email=${MY_EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=cloudflare"
 
-      # --- Wildcard Certificate Request ---
-      - "--certificatesresolvers.myresolver.acme.domains[0].main=${MY_DOMAIN}"
-      - "--certificatesresolvers.myresolver.acme.domains[0].sans=*.${MY_DOMAIN}"
+      # --- Wildcard Certificate Request (CORRECTED SYNTAX) ---
+      - "--certificatesresolvers.myresolver.acme.domain.main=${MY_DOMAIN}"
+      - "--certificatesresolvers.myresolver.acme.domain.sans=*.${MY_DOMAIN}"
 
       # --- Attach the resolver to our HTTPS entrypoint ---
       - "--entrypoints.websecure.http.tls.certresolver=myresolver"
@@ -53,7 +51,6 @@ services:
       - "./dynamic_conf:/dynamic_conf:ro"
 
     networks:
-      # This block just lists the networks to JOIN
       - traefik-public
 
     labels:
@@ -66,10 +63,8 @@ services:
       - "traefik.http.routers.traefik-dashboard.middlewares=authelia-auth@file,sec-headers@file"
 
 volumes:
-  traefik-certs: # Defines the persistent volume for certs
+  traefik-certs:
 
-# --- THIS IS THE CORRECT, TOP-LEVEL BLOCK ---
-# This block DEFINES the networks used in this file
 networks:
   traefik-public:
-    external: true # Tells Docker Compose to use the network you already created
+    external: true
