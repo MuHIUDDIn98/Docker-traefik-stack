@@ -8,6 +8,9 @@ services:
     environment:
       - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
     command:
+      # --- NEW: Logging for Debugging ---
+      - "--log.level=INFO"
+
       # --- API, Providers, & Dynamic Config ---
       - "--api.dashboard=true"
       - "--providers.docker=true"
@@ -34,9 +37,10 @@ services:
       - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
       - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=cloudflare"
 
-      # --- Wildcard Certificate Request (CORRECTED SYNTAX) ---
-      - "--certificatesresolvers.myresolver.acme.domain.main=${MY_DOMAIN}"
-      - "--certificatesresolvers.myresolver.acme.domain.sans=*.${MY_DOMAIN}"
+      # --- Wildcard Certificate Request (CORRECTED: Using Indexed Array [0]) ---
+      # This is the safest CLI syntax for nested domain arrays.
+      - "--certificatesresolvers.myresolver.acme.domains[0].main=${MY_DOMAIN}"
+      - "--certificatesresolvers.myresolver.acme.domains[0].sans=*.${MY_DOMAIN}"
 
       # --- Attach the resolver to our HTTPS entrypoint ---
       - "--entrypoints.websecure.http.tls.certresolver=myresolver"
