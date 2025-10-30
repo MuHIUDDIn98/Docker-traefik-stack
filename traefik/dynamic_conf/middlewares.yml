@@ -1,0 +1,38 @@
+http:
+  middlewares:
+
+    # 1. Authelia ForwardAuth
+    # Name: authelia-auth@file
+    # This asks Authelia if a user is logged in before allowing the request.
+    authelia-auth:
+      forwardAuth:
+        # It forwards the request to the authelia container
+        address: "http://authelia-app:9091/api/verify?rd=https://auth.${MY_DOMAIN}/"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - "Remote-User"
+          - "Remote-Groups"
+
+    # 2. Production Security Headers
+    # Name: sec-headers@file
+    # This adds important security headers to all responses.
+    sec-headers:
+      headers:
+        stsSeconds: 31536000         # HSTS: Tells browser to only use HTTPS
+        frameDeny: true               # Clickjacking protection
+        contentTypeNosniff: true      # XSS protection
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+
+    # 3. Production Rate Limit
+    # Name: sec-ratelimit@file
+    # This blocks IPs that make too many requests.
+    sec-ratelimit:
+      rateLimit: { average: 100, burst: 50, period: "1m" }
+
+    # 4. Production Compression
+    # Name: prod-compress@file
+    # This compresses responses to make your site load faster.
+    prod-compress:
+      compress: {}

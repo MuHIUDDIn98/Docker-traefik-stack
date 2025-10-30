@@ -1,0 +1,49 @@
+services:
+  # Container 1: The Authelia Application
+  authelia-app:
+    image: "authelia/authelia"
+    container_name: "authelia-app"
+    env_file: .env # <-- Loads your .env secrets
+    environment:
+      # This passes the secrets into the container...
+      - AUTHELIA_JWT_SECRET=${AUTHELIA_JWT_SECRET}
+      - AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET}
+      - AUTHELIA_REDIS_PASSWORD=${REDIS_PASSWORD}
+    volumes:
+      # ...so these config files can read them.
+      - ./configuration.yml:/config/configuration.yml
+      - ./users_database.yml:/config/users_database.yml
+    networks:
+      - default          # <-- Private network to talk to Redis
+      - traefik-public   # <-- Public network to talk to Traefik
+    expose:
+      - 9091 # Internal port, not exposed to the internet
+    labels:
+      - "traefik.enable=true" # Tell Traefik to expose this service
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.authelia.rule=Host(`auth.${MY_DOMAIN}`)" # The URL for the login page
+      - "traefik.http.routers.authelia.entrypoints=websecure" # HTTPS only
+      - "traefik.http.services.authelia.loadbalancer.server.port=9091" # Route to its internal port
+      - "traefik.http.routers.authelia.middlewares=sec-headers@file" # Apply security headers
+      # We DON'T apply authelia-auth to the login page itself!
+
+  # Container 2: The Redis Database (Session Storage)
+  authelia-redis:
+    image: "redis:alpine"
+    container_name: "authelia-redis"
+    env_file: .env # <-- Load .env to get the password
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"] # Start Redis with a password
+    volumes:
+      - "redis-data:/data" # Persistent volume for session data
+    networks:
+      - default # <-- ONLY on the private network. 100% secure.
+    expose:
+      - 6379 # Internal port for Authelia to use
+
+networks:
+  default:
+  traefik-public:
+    external: true
+
+volumes:
+  redis-data: # Defines the persistent volume

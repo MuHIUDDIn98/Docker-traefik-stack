@@ -1,0 +1,31 @@
+# We tell Authelia to get its secrets from the Environment Variables
+# we passed in from the docker-compose.yml
+session:
+  redis:
+    host: authelia-redis # Connects to the Redis container by its name
+    port: 6379
+    password: { env: 'AUTHELIA_REDIS_PASSWORD' } # Reads the password
+  secret: { env: 'AUTHELIA_SESSION_SECRET' }
+
+authentication_backend:
+  file:
+    # Tells Authelia to get its user list from the file below
+    path: /config/users_database.yml
+
+jwt_secret: { env: 'AUTHELIA_JWT_SECRET' }
+
+# This is the most important part:
+access_control:
+  # The default policy is to DENY all traffic
+  default_policy: deny
+  rules:
+    # Rule 1: Allow anyone to access the login page itself
+    - domain: "auth.${MY_DOMAIN}"
+      policy: bypass
+    # Rule 2: All other subdomains require a user to be logged in
+    - domain: "*.${MY_DOMAIN}"
+      policy: one_factor # 'one_factor' means password. 'two_factor' would require 2FA.
+
+server:
+  host: 0.0.0.0
+  port: 9091

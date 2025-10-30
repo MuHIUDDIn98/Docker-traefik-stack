@@ -1,0 +1,11 @@
+users:
+  admin:
+    displayname: "Admin"
+    # You must generate this hash with the Authelia docker command
+    password: "$argon2id$v=19$m=65536,t=3,p=4$..."
+    email: admin@my-cool-site.com
+
+  # another-user:
+  #   displayname: "Another User"
+  #   password: "$argon2id$v=19$m=65536,t=3,p=4$..."
+  #   email: user@my-cool-site.com
